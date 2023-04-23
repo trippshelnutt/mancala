@@ -1,4 +1,6 @@
-﻿namespace Mancala.Domain.Tests.Repositories;
+﻿using CSharpFunctionalExtensions;
+
+namespace Mancala.Domain.Tests.Repositories;
 
 public class MemoryGameRepository : IRepository<Game, GameId>
 {
@@ -8,32 +10,20 @@ public class MemoryGameRepository : IRepository<Game, GameId>
     {
         var boards = new List<Board>
         {
-            new(12),
-            new(34)
+            new(new BoardId(12)),
+            new(new BoardId(34))
         };
 
         _games = new List<Game>
         {
-            new("game1", boards[0], 12, 34, PlayerId.None),
-            new("game2", boards[1], 56, 78, PlayerId.None)
+            new(new GameId("game1"), boards[0], new PlayerId(12), new PlayerId(34), Maybe<PlayerId>.None),
+            new(new GameId("game2"), boards[1], new PlayerId(56), new PlayerId(78), Maybe<PlayerId>.None)
         };
     }
 
-    public Game GetById(GameId id)
+    public Maybe<Game> GetById(GameId id)
     {
-        var game = _games.Find(g => g.Id == id);
-
-        if (game == null)
-        {
-            throw new Exception("Game not found.");
-        }
-
-        return game;
-    }
-
-    public Game? FindById(GameId id)
-    {
-        return _games.Find(g => g.Id == id);
+        return _games.Find(g => g.Id == id) ?? Maybe<Game>.None;
     }
 
     public IEnumerable<Game> GetAll()

@@ -1,14 +1,10 @@
-﻿namespace Mancala.Domain;
+﻿using CSharpFunctionalExtensions;
 
-public record struct GameId(string Value)
-{
-    public static implicit operator GameId(string value) => new(value);
-    public static explicit operator string(GameId gameId) => gameId.Value;
-}
+namespace Mancala.Domain;
 
 public class Game : IAggregateRoot<GameId>
 {
-    public Game(GameId id, Board board, PlayerId playerId1, PlayerId playerId2, PlayerId currentPlayerId)
+    public Game(GameId id, Board board, PlayerId playerId1, PlayerId playerId2, Maybe<PlayerId> currentPlayerId)
     {
         Id = id;
         Board = board;
@@ -18,10 +14,10 @@ public class Game : IAggregateRoot<GameId>
     }
 
     public GameId Id { get; init; }
-    public Board Board { get; init; }
-    public PlayerId PlayerId1 { get; init; }
-    public PlayerId PlayerId2 { get; init; }
-    public PlayerId CurrentPlayerId { get; private set; }
+    private Board Board { get; }
+    private PlayerId PlayerId1 { get; }
+    private PlayerId PlayerId2 { get; }
+    private Maybe<PlayerId> CurrentPlayerId { get; set; }
 
     public void Setup()
     {
@@ -29,16 +25,34 @@ public class Game : IAggregateRoot<GameId>
         CurrentPlayerId = PlayerId1;
     }
 
-    public void MakeSelection(PlayerId playerId, PitId pitId)
-    {
-        if (CurrentPlayerId == PlayerId.None)
-        {
-            throw new Exception("Game has not started.");
-        }
+    public int TotalStones => Board.TotalStones;
+    public int Player1Stones => Board.Player1Stones;
+    public int Player2Stones => Board.Player2Stones;
 
-        if (CurrentPlayerId != playerId)
-        {
-            throw new Exception("Not your turn!");
-        }
-    }
+    public Result<IEnumerable<PitId>> GetPlays(PlayerId playerId) =>
+        CheckCurrentPlayer(playerId)
+            .Bind(FindPlays);
+
+    public Result MakePlay(PlayerId playerId, PitId pitId) =>
+        CheckCurrentPlayer(playerId)
+            .Bind(p => CheckValidPlay(p, pitId))
+            .Bind(_ => Result.Success(true))
+            .BindIf(playerId == PlayerId1, _ => Board.MoveStonesForPlayer1(pitId))
+            .BindIf(playerId == PlayerId2, _ => Board.MoveStonesForPlayer2(pitId));
+
+    private Result<PlayerId> CheckCurrentPlayer(PlayerId playerId) =>
+        Result.Success(playerId)
+            .Ensure(p => p == PlayerId1 || p == PlayerId2, "You are not in this game.")
+            .Ensure(_ => CurrentPlayerId.HasValue, "Game has not started.")
+            .Ensure(p => p == CurrentPlayerId, "Not your turn!");
+
+    private Result<PitId> CheckValidPlay(PlayerId playerId, PitId pitId) =>
+        FindPlays(playerId)
+            .Ensure(p => p.Contains(pitId), "Invalid play.")
+            .Bind(_ => Result.Success(pitId));
+
+    private Result<IEnumerable<PitId>> FindPlays(PlayerId playerId) =>
+        Result.Success(Enumerable.Empty<PitId>())
+            .BindIf(playerId == PlayerId1, _ => Board.GetPlaysForPlayer1())
+            .BindIf(playerId == PlayerId2, _ => Board.GetPlaysForPlayer2());
 }

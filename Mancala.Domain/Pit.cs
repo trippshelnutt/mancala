@@ -1,44 +1,25 @@
 ﻿namespace Mancala.Domain;
 
-public record struct PitId(byte Value)
-{
-    public static implicit operator PitId(byte value) => new(value);
-    public static explicit operator byte(PitId pitId) => pitId.Value;
-};
-
 public class Pit
 {
-    public Pit(PitId id, BoardId boardId, bool isStore, byte numberOfStones)
+    public Pit(PitId id, BoardId boardId, byte numberOfStones)
     {
         Id = id;
         BoardId = boardId;
-        IsStore = isStore;
         NumberOfStones = numberOfStones;
     }
 
-    public static IList<Pit> GeneratePitListForBoard(BoardId boardId)
-    {
-        return new List<Pit>
-        {
-            new(1, boardId, true, 0),
-            new(2, boardId, false, 0),
-            new(3, boardId, false, 0),
-            new(4, boardId, false, 0),
-            new(5, boardId, false, 0),
-            new(6, boardId, false, 0),
-            new(7, boardId, false, 0),
-            new(8, boardId, true, 0),
-            new(9, boardId, false, 0),
-            new(10, boardId, false, 0),
-            new(11, boardId, false, 0),
-            new(12, boardId, false, 0),
-            new(13, boardId, false, 0),
-            new(14, boardId, false, 0)
-        };
-    }
+    public static IList<Pit> GeneratePitListForBoard(BoardId boardId) =>
+        Enumerable.Range(1, 14).Select(i => new Pit(new PitId((byte)i), boardId, 0)).ToList();
 
     public PitId Id { get; init; }
     public BoardId BoardId { get; init; }
-    public bool IsStore { get; init; }
     public byte NumberOfStones { get; set; }
+
+    public bool IsStore => IsPlayer1Store || IsPlayer2Store;
+    public bool IsPlayer1Store => Id == PitId.Player1StorePitId;
+    public bool IsPlayer2Store => Id == PitId.Player2StorePitId;
+
+    public bool IsPlayer1Play => PitId.Player1PlayPitIds.Contains(Id);
+    public bool IsPlayer2Play => PitId.Player2PlayPitIds.Contains(Id);
 }
