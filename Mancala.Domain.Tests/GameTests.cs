@@ -1,5 +1,3 @@
-using Mancala.Domain.Tests.Repositories;
-
 namespace Mancala.Domain.Tests;
 
 public class GameTests
@@ -8,25 +6,14 @@ public class GameTests
     private const string NotYourTurnError = "Not your turn!";
     private const string YouAreNotInThisGameError = "You are not in this game.";
 
-    private static readonly GameId GameId = new("game1");
-    private static readonly PlayerId PlayerId1 = new(12);
-    private static readonly PlayerId PlayerId2 = new(34);
-    private static readonly PlayerId OtherPlayerId = new(77);
-
-    private Game _sut = null!;
+    private Game? _sut;
 
     private static Game CreateSut()
     {
-        var gameRepository = new MemoryGameRepository();
+        var playerId1 = PlayerId.GetRandomPlayerId();
+        var playerId2 = PlayerId.GetRandomPlayerId();
 
-        var maybeGame = gameRepository.GetById(GameId);
-
-        if (maybeGame.HasNoValue)
-        {
-            throw new Exception("Unable to create game.");
-        }
-
-        return maybeGame.Value;
+        return Game.CreateGame(playerId1, playerId2);
     }
 
     [Fact]
@@ -54,7 +41,7 @@ public class GameTests
     {
         _sut = CreateSut();
 
-        var result = _sut.GetPlays(PlayerId1);
+        var result = _sut.GetPlays(_sut.PlayerId1);
 
         Assert.True(result.IsFailure);
         Assert.Equal(GameHasNotStartedError, result.Error);
@@ -66,10 +53,11 @@ public class GameTests
         _sut = CreateSut();
         _sut.Setup();
 
-        var result = _sut.GetPlays(PlayerId1);
+        var result = _sut.GetPlays(_sut.PlayerId1);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(PitId.Player1PlayPitIds, result.Value);
+        Assert.Equal(6, result.Value.Count);
+        Assert.True(result.Value.All(p => p.IsPlayerPlay(_sut.PlayerId1)));
     }
 
     [Fact]
@@ -78,7 +66,7 @@ public class GameTests
         _sut = CreateSut();
         _sut.Setup();
 
-        var result = _sut.GetPlays(PlayerId2);
+        var result = _sut.GetPlays(_sut.PlayerId2);
 
         Assert.True(result.IsFailure);
         Assert.Equal(NotYourTurnError, result.Error);
@@ -87,10 +75,11 @@ public class GameTests
     [Fact]
     public void GetPlaysReturnsErrorForUnknownPlayer()
     {
+        var otherPlayerId = PlayerId.GetRandomPlayerId();
         _sut = CreateSut();
         _sut.Setup();
 
-        var result = _sut.GetPlays(OtherPlayerId);
+        var result = _sut.GetPlays(otherPlayerId);
 
         Assert.True(result.IsFailure);
         Assert.Equal(YouAreNotInThisGameError, result.Error);

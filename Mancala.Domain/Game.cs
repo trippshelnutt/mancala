@@ -4,20 +4,30 @@ namespace Mancala.Domain;
 
 public class Game : IAggregateRoot<GameId>
 {
-    public Game(GameId id, Board board, PlayerId playerId1, PlayerId playerId2, Maybe<PlayerId> currentPlayerId)
+    public Game(Maybe<GameId> id, PlayerId playerId1, PlayerId playerId2, Maybe<PlayerId> currentPlayerId, Board board)
     {
         Id = id;
-        Board = board;
         PlayerId1 = playerId1;
         PlayerId2 = playerId2;
         CurrentPlayerId = currentPlayerId;
+        Board = board;
     }
 
-    public GameId Id { get; init; }
-    private Board Board { get; }
-    private PlayerId PlayerId1 { get; }
-    private PlayerId PlayerId2 { get; }
+    public static Game CreateGame(PlayerId playerId1, PlayerId playerId2)
+    {
+        return new Game(
+            Maybe<GameId>.None,
+            playerId1,
+            playerId2,
+            Maybe<PlayerId>.None,
+            Board.CreateBoard(playerId1, playerId2));
+    }
+
+    public Maybe<GameId> Id { get; set; }
+    public PlayerId PlayerId1 { get; }
+    public PlayerId PlayerId2 { get; }
     private Maybe<PlayerId> CurrentPlayerId { get; set; }
+    private Board Board { get; }
 
     public void Setup()
     {
@@ -26,19 +36,18 @@ public class Game : IAggregateRoot<GameId>
     }
 
     public int TotalStones => Board.TotalStones;
-    public int Player1Stones => Board.Player1Stones;
-    public int Player2Stones => Board.Player2Stones;
+    public int Player1Stones => Board.GetStonesForPlayer(PlayerId1);
+    public int Player2Stones => Board.GetStonesForPlayer(PlayerId2);
 
-    public Result<IEnumerable<PitId>> GetPlays(PlayerId playerId) =>
+    public Result<List<Pit>> GetPlays(PlayerId playerId) =>
         CheckCurrentPlayer(playerId)
             .Bind(FindPlays);
 
-    public Result MakePlay(PlayerId playerId, PitId pitId) =>
+    public Result MakePlay(PlayerId playerId, Pit pit) =>
         CheckCurrentPlayer(playerId)
-            .Bind(p => CheckValidPlay(p, pitId))
+            .Bind(p => CheckValidPlay(p, pit))
             .Bind(_ => Result.Success(true))
-            .BindIf(playerId == PlayerId1, _ => Board.MoveStonesForPlayer1(pitId))
-            .BindIf(playerId == PlayerId2, _ => Board.MoveStonesForPlayer2(pitId));
+            .Bind(_ => Board.MoveStonesForPlayer(playerId, pit));
 
     private Result<PlayerId> CheckCurrentPlayer(PlayerId playerId) =>
         Result.Success(playerId)
@@ -46,13 +55,12 @@ public class Game : IAggregateRoot<GameId>
             .Ensure(_ => CurrentPlayerId.HasValue, "Game has not started.")
             .Ensure(p => p == CurrentPlayerId, "Not your turn!");
 
-    private Result<PitId> CheckValidPlay(PlayerId playerId, PitId pitId) =>
+    private Result<Pit> CheckValidPlay(PlayerId playerId, Pit pit) =>
         FindPlays(playerId)
-            .Ensure(p => p.Contains(pitId), "Invalid play.")
-            .Bind(_ => Result.Success(pitId));
+            .Ensure(p => p.Contains(pit), "Invalid play.")
+            .Bind(_ => Result.Success(pit));
 
-    private Result<IEnumerable<PitId>> FindPlays(PlayerId playerId) =>
-        Result.Success(Enumerable.Empty<PitId>())
-            .BindIf(playerId == PlayerId1, _ => Board.GetPlaysForPlayer1())
-            .BindIf(playerId == PlayerId2, _ => Board.GetPlaysForPlayer2());
+    private Result<List<Pit>> FindPlays(PlayerId playerId) =>
+        Result.Success(Enumerable.Empty<Pit>())
+            .Bind(_ => Board.GetPlaysForPlayer(playerId));
 }

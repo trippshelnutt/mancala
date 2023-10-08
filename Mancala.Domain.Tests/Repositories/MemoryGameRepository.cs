@@ -1,46 +1,28 @@
-﻿using CSharpFunctionalExtensions;
+﻿namespace Mancala.Domain.Tests.Repositories;
 
-namespace Mancala.Domain.Tests.Repositories;
-
-public class MemoryGameRepository : IRepository<Game, GameId>
+public class MemoryGameRepository : MemoryRepository<Game, GameId>
 {
-    private readonly List<Game> _games;
-
-    public MemoryGameRepository()
+    private MemoryGameRepository()
+        : base(GameId.GetRandomGameId)
     {
-        var boards = new List<Board>
+    }
+
+    public static MemoryGameRepository CreateGameRepository(MemoryPlayerRepository playerRepository)
+    {
+        var playersResult = playerRepository.GetAll();
+
+        if (playersResult.IsFailure)
         {
-            new(new BoardId(12)),
-            new(new BoardId(34))
-        };
+            throw new Exception("Unable to load players.");
+        }
 
-        _games = new List<Game>
-        {
-            new(new GameId("game1"), boards[0], new PlayerId(12), new PlayerId(34), Maybe<PlayerId>.None),
-            new(new GameId("game2"), boards[1], new PlayerId(56), new PlayerId(78), Maybe<PlayerId>.None)
-        };
-    }
+        var players = playersResult.Value.ToList();
 
-    public Maybe<Game> GetById(GameId id)
-    {
-        return _games.Find(g => g.Id == id) ?? Maybe<Game>.None;
-    }
+        var gameRepository = new MemoryGameRepository();
 
-    public IEnumerable<Game> GetAll()
-    {
-        return _games;
-    }
+        gameRepository.Add(Game.CreateGame(players[0].Id.Value, players[1].Id.Value));
+        gameRepository.Add(Game.CreateGame(players[2].Id.Value, players[3].Id.Value));
 
-    public GameId Add(Game entity)
-    {
-        // TODO this should add
-        _games.Add(entity);
-        return entity.Id;
-    }
-
-    public GameId Update(Game entity)
-    {
-        // TODO this should save
-        return entity.Id;
+        return gameRepository;
     }
 }

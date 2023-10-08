@@ -4,8 +4,8 @@ namespace Mancala.Domain;
 
 public interface IRepository<TEntity, TId> where TEntity : IAggregateRoot<TId>
 {
-    public Maybe<TEntity> GetById(TId id);
-    public IEnumerable<TEntity> GetAll();
-    public TId Add(TEntity entity);
-    public TId Update(TEntity entity);
+    public Result<TEntity> GetById(TId id);
+    public Result<IEnumerable<TEntity>> GetAll();
+    public Result<TEntity> Add(TEntity entity);
+    public Result<TEntity> Update(TEntity entity);
 }

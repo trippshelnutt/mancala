@@ -4,20 +4,38 @@ namespace Mancala.Domain;
 
 public class Board
 {
-    public Board(BoardId id)
-    {
-        Id = id;
-        PitList = Pit.GeneratePitListForBoard(id);
-    }
-
-    public Board(BoardId id, IList<Pit> pitList)
+    public Board(Maybe<BoardId> id, IList<Pit> pitList)
     {
         Id = id;
         PitList = pitList;
     }
 
-    public BoardId Id { get; }
-    public IList<Pit> PitList;
+    public static Board CreateBoard(PlayerId playerId1, PlayerId playerId2)
+    {
+        var player1PitList = CreatePitListForPlayer(playerId1);
+        var player2PitList = CreatePitListForPlayer(playerId2);
+
+        var pitList = player1PitList.Concat(player2PitList).ToList();
+
+        return new Board(Maybe<BoardId>.None, pitList);
+    }
+
+    private static IEnumerable<Pit> CreatePitListForPlayer(PlayerId playerId)
+    {
+        return new List<Pit>
+        {
+            Pit.CreatePit(playerId, true),
+            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(playerId, false),
+        };
+    }
+
+    public Maybe<BoardId> Id { get; }
+    public IList<Pit> PitList { get; init; }
 
     public void Setup()
     {
@@ -26,21 +44,14 @@ public class Board
     }
 
     public int TotalStones => PitList.Sum(p => p.NumberOfStones);
-    public int Player1Stones => PitList.Where(p => p.IsPlayer1Store).Sum(p => p.NumberOfStones);
-    public int Player2Stones => PitList.Where(p => p.IsPlayer2Store).Sum(p => p.NumberOfStones);
 
-    public Result<IEnumerable<PitId>> GetPlaysForPlayer1() =>
-        Result.Success(PitList.Where(p => p is { IsPlayer1Play: true, NumberOfStones: > 0 }).Select(p => p.Id));
+    public int GetStonesForPlayer(PlayerId playerId) =>
+        PitList.Where(p => p.IsPlayerStore(playerId)).Sum(p => p.NumberOfStones);
 
-    public Result<IEnumerable<PitId>> GetPlaysForPlayer2() =>
-        Result.Success(PitList.Where(p => p is { IsPlayer2Play: true, NumberOfStones: > 0 }).Select(p => p.Id));
+    public Result<List<Pit>> GetPlaysForPlayer(PlayerId playerId) =>
+        Result.Success(PitList.Where(p => p.IsPlayerPlay(playerId) && p.NumberOfStones > 0).ToList());
 
-    public Result<bool> MoveStonesForPlayer1(PitId pitId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Result<bool> MoveStonesForPlayer2(PitId pitId)
+    public Result<bool> MoveStonesForPlayer(PlayerId playerId, Pit pit)
     {
         throw new NotImplementedException();
     }

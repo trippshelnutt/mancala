@@ -1,25 +1,29 @@
-﻿namespace Mancala.Domain;
+﻿using CSharpFunctionalExtensions;
+
+namespace Mancala.Domain;
 
 public class Pit
 {
-    public Pit(PitId id, BoardId boardId, byte numberOfStones)
+    public Pit(PlayerId playerId, bool isStore, Maybe<PitId> id, Maybe<BoardId> boardId, byte numberOfStones)
     {
+        PlayerId = playerId;
+        IsStore = isStore;
         Id = id;
         BoardId = boardId;
         NumberOfStones = numberOfStones;
     }
 
-    public static IList<Pit> GeneratePitListForBoard(BoardId boardId) =>
-        Enumerable.Range(1, 14).Select(i => new Pit(new PitId((byte)i), boardId, 0)).ToList();
+    public static Pit CreatePit(PlayerId playerId, bool isStore)
+    {
+        return new Pit(playerId, isStore, Maybe<PitId>.None, Maybe<BoardId>.None, 0);
+    }
 
-    public PitId Id { get; init; }
-    public BoardId BoardId { get; init; }
+    public PlayerId PlayerId { get; }
+    public bool IsStore { get; }
+    public Maybe<PitId> Id { get; set; }
+    public Maybe<BoardId> BoardId { get; set; }
     public byte NumberOfStones { get; set; }
 
-    public bool IsStore => IsPlayer1Store || IsPlayer2Store;
-    public bool IsPlayer1Store => Id == PitId.Player1StorePitId;
-    public bool IsPlayer2Store => Id == PitId.Player2StorePitId;
-
-    public bool IsPlayer1Play => PitId.Player1PlayPitIds.Contains(Id);
-    public bool IsPlayer2Play => PitId.Player2PlayPitIds.Contains(Id);
+    public bool IsPlayerPlay(PlayerId playerId) => PlayerId == playerId;
+    public bool IsPlayerStore(PlayerId playerId) => IsStore && IsPlayerPlay(playerId);
 }

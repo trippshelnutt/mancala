@@ -1,6 +1,8 @@
-﻿namespace Mancala.Domain;
+﻿using CSharpFunctionalExtensions;
 
-public interface IAggregateRoot<out TId>
+namespace Mancala.Domain;
+
+public interface IAggregateRoot<TId>
 {
-    public TId Id { get; }
+    public Maybe<TId> Id { get; set; }
 }
