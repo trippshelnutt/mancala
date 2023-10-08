@@ -1,3 +1,3 @@
 ﻿namespace Mancala.Domain;
 
-public record struct PlayerName(string FirstName, string LastName);
+public record PlayerName(string FirstName, string LastName);

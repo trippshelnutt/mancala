@@ -1,6 +1,6 @@
 ﻿namespace Mancala.Domain;
 
-public record struct PitId(byte Value)
+public record PitId(byte Value)
 {
     public static readonly List<PitId> Player1PlayPitIds = new()
     {

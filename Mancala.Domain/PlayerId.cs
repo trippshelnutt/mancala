@@ -1,3 +1,3 @@
 ﻿namespace Mancala.Domain;
 
-public record struct PlayerId(long Value);
+public record PlayerId(long Value);
