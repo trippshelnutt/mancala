@@ -20,7 +20,7 @@ public class Game : IAggregateRoot<GameId>
             playerId1,
             playerId2,
             Maybe<PlayerId>.None,
-            Board.CreateBoard(playerId1, playerId2));
+            Board.CreateBoard());
     }
 
     public Maybe<GameId> Id { get; set; }
@@ -36,10 +36,10 @@ public class Game : IAggregateRoot<GameId>
     }
 
     public int TotalStones => Board.TotalStones;
-    public int Player1Stones => Board.GetStonesForPlayer(PlayerId1);
-    public int Player2Stones => Board.GetStonesForPlayer(PlayerId2);
+    public int Player1Stones => Board.GetStonesForPlayer1();
+    public int Player2Stones => Board.GetStonesForPlayer2();
 
-    public Result<List<Pit>> GetPlays(PlayerId playerId) =>
+    public Result<IEnumerable<Pit>> GetPlays(PlayerId playerId) =>
         CheckCurrentPlayer(playerId)
             .Bind(FindPlays);
 
@@ -47,7 +47,7 @@ public class Game : IAggregateRoot<GameId>
         CheckCurrentPlayer(playerId)
             .Bind(p => CheckValidPlay(p, pit))
             .Bind(_ => Result.Success(true))
-            .Bind(_ => Board.MoveStonesForPlayer(playerId, pit));
+            .Bind(_ => Board.MoveStones(pit));
 
     private Result<PlayerId> CheckCurrentPlayer(PlayerId playerId) =>
         Result.Success(playerId)
@@ -60,7 +60,8 @@ public class Game : IAggregateRoot<GameId>
             .Ensure(p => p.Contains(pit), "Invalid play.")
             .Bind(_ => Result.Success(pit));
 
-    private Result<List<Pit>> FindPlays(PlayerId playerId) =>
+    private Result<IEnumerable<Pit>> FindPlays(PlayerId playerId) =>
         Result.Success(Enumerable.Empty<Pit>())
-            .Bind(_ => Board.GetPlaysForPlayer(playerId));
+            .BindIf(playerId == PlayerId1, _ => Board.GetPlaysForPlayer1())
+            .BindIf(playerId == PlayerId2, _ => Board.GetPlaysForPlayer2());
 }

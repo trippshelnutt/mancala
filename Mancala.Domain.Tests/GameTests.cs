@@ -56,8 +56,8 @@ public class GameTests
         var result = _sut.GetPlays(_sut.PlayerId1);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(6, result.Value.Count);
-        Assert.True(result.Value.All(p => p.IsPlayerPlay(_sut.PlayerId1)));
+        Assert.Equal(6, result.Value.Count());
+        Assert.True(result.Value.All(p => p.IsPlayer1));
     }
 
     [Fact]

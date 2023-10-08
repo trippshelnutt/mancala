@@ -4,54 +4,61 @@ namespace Mancala.Domain;
 
 public class Board
 {
-    public Board(Maybe<BoardId> id, IList<Pit> pitList)
+    public Board(Maybe<BoardId> id, IDictionary<PitId, Pit> pitMap)
     {
         Id = id;
-        PitList = pitList;
+        PitMap = pitMap;
     }
 
-    public static Board CreateBoard(PlayerId playerId1, PlayerId playerId2)
+    public static Board CreateBoard()
     {
-        var player1PitList = CreatePitListForPlayer(playerId1);
-        var player2PitList = CreatePitListForPlayer(playerId2);
-
-        var pitList = player1PitList.Concat(player2PitList).ToList();
-
-        return new Board(Maybe<BoardId>.None, pitList);
-    }
-
-    private static IEnumerable<Pit> CreatePitListForPlayer(PlayerId playerId)
-    {
-        return new List<Pit>
+        var pitList = new List<Pit>
         {
-            Pit.CreatePit(playerId, true),
-            Pit.CreatePit(playerId, false),
-            Pit.CreatePit(playerId, false),
-            Pit.CreatePit(playerId, false),
-            Pit.CreatePit(playerId, false),
-            Pit.CreatePit(playerId, false),
-            Pit.CreatePit(playerId, false),
+            Pit.CreatePit(new PitId(0), PitPlayer.Player1, PitType.Store),
+            Pit.CreatePit(new PitId(1), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(2), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(3), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(4), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(5), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(6), PitPlayer.Player1, PitType.Play),
+            Pit.CreatePit(new PitId(7), PitPlayer.Player2, PitType.Store),
+            Pit.CreatePit(new PitId(8), PitPlayer.Player2, PitType.Play),
+            Pit.CreatePit(new PitId(9), PitPlayer.Player2, PitType.Play),
+            Pit.CreatePit(new PitId(10), PitPlayer.Player2, PitType.Play),
+            Pit.CreatePit(new PitId(11), PitPlayer.Player2, PitType.Play),
+            Pit.CreatePit(new PitId(12), PitPlayer.Player2, PitType.Play),
+            Pit.CreatePit(new PitId(13), PitPlayer.Player2, PitType.Play),
         };
+
+        var pitMap = pitList.ToDictionary(p => p.Id);
+
+        return new Board(Maybe<BoardId>.None, pitMap);
     }
 
     public Maybe<BoardId> Id { get; }
-    public IList<Pit> PitList { get; init; }
+    private IDictionary<PitId, Pit> PitMap { get; }
 
     public void Setup()
     {
-        var nonStorePits = PitList.Where(p => !p.IsStore).ToList();
+        var nonStorePits = PitMap.Values.Where(p => !p.IsStore).ToList();
         nonStorePits.ForEach(p => p.NumberOfStones = 4);
     }
 
-    public int TotalStones => PitList.Sum(p => p.NumberOfStones);
+    public int TotalStones => PitMap.Values.Sum(p => p.NumberOfStones);
 
-    public int GetStonesForPlayer(PlayerId playerId) =>
-        PitList.Where(p => p.IsPlayerStore(playerId)).Sum(p => p.NumberOfStones);
+    public int GetStonesForPlayer1() =>
+        PitMap.Values.Where(p => p is { IsPlayer1: true, IsStore: true }).Sum(p => p.NumberOfStones);
 
-    public Result<List<Pit>> GetPlaysForPlayer(PlayerId playerId) =>
-        Result.Success(PitList.Where(p => p.IsPlayerPlay(playerId) && p.NumberOfStones > 0).ToList());
+    public int GetStonesForPlayer2() =>
+        PitMap.Values.Where(p => p is { IsPlayer1: true, IsStore: true }).Sum(p => p.NumberOfStones);
 
-    public Result<bool> MoveStonesForPlayer(PlayerId playerId, Pit pit)
+    public Result<IEnumerable<Pit>> GetPlaysForPlayer1() =>
+        Result.Success(PitMap.Values.Where(p => p is { IsPlayer1: true, IsStore: false, NumberOfStones: > 0 }));
+
+    public Result<IEnumerable<Pit>> GetPlaysForPlayer2() =>
+        Result.Success(PitMap.Values.Where(p => p is { IsPlayer2: true, IsStore: false, NumberOfStones: > 0 }));
+
+    public Result<bool> MoveStones(Pit pit)
     {
         throw new NotImplementedException();
     }
