@@ -26,7 +26,7 @@ public class Game : IAggregateRoot<GameId>
     public Maybe<GameId> Id { get; set; }
     public PlayerId PlayerId1 { get; }
     public PlayerId PlayerId2 { get; }
-    private Maybe<PlayerId> CurrentPlayerId { get; set; }
+    public Maybe<PlayerId> CurrentPlayerId { get; private set; }
     private Board Board { get; }
 
     public void Setup()
@@ -40,14 +40,16 @@ public class Game : IAggregateRoot<GameId>
     public int Player2Stones => Board.GetStonesForPlayer2();
 
     public Result<IEnumerable<Pit>> GetPlays(PlayerId playerId) =>
-        CheckCurrentPlayer(playerId)
+        Result.Success(playerId)
+            .Bind(CheckCurrentPlayer)
             .Bind(FindPlays);
 
-    public Result MakePlay(PlayerId playerId, Pit pit) =>
-        CheckCurrentPlayer(playerId)
+    public Result<PlayerId> MakePlay(PlayerId playerId, Pit pit) =>
+        Result.Success(playerId)
+            .Bind(CheckCurrentPlayer)
             .Bind(p => CheckValidPlay(p, pit))
-            .Bind(_ => Result.Success(true))
-            .Bind(_ => Board.MoveStones(pit));
+            .Bind(Board.MoveStones)
+            .Bind(_ => EndTurn());
 
     private Result<PlayerId> CheckCurrentPlayer(PlayerId playerId) =>
         Result.Success(playerId)
@@ -56,7 +58,8 @@ public class Game : IAggregateRoot<GameId>
             .Ensure(p => p == CurrentPlayerId, "Not your turn!");
 
     private Result<Pit> CheckValidPlay(PlayerId playerId, Pit pit) =>
-        FindPlays(playerId)
+        Result.Success(playerId)
+            .Bind(FindPlays)
             .Ensure(p => p.Contains(pit), "Invalid play.")
             .Bind(_ => Result.Success(pit));
 
@@ -64,4 +67,11 @@ public class Game : IAggregateRoot<GameId>
         Result.Success(Enumerable.Empty<Pit>())
             .BindIf(playerId == PlayerId1, _ => Board.GetPlaysForPlayer1())
             .BindIf(playerId == PlayerId2, _ => Board.GetPlaysForPlayer2());
+
+    private Result<PlayerId> EndTurn() =>
+        Result.Success(CurrentPlayerId)
+            .Tap(SetNextPlayer)
+            .Bind(_ => Result.Success(CurrentPlayerId.Value));
+
+    private void SetNextPlayer() => CurrentPlayerId = CurrentPlayerId == PlayerId1 ? PlayerId2 : PlayerId1;
 }

@@ -25,7 +25,7 @@ public class GameTests
     }
 
     [Fact]
-    public void SetupGameHasCorrectNumberOfTotalStones()
+    public void GameHas48StonesAfterSetup()
     {
         _sut = CreateSut();
 
@@ -34,6 +34,16 @@ public class GameTests
         Assert.Equal(48, _sut.TotalStones);
         Assert.Equal(0, _sut.Player1Stones);
         Assert.Equal(0, _sut.Player2Stones);
+    }
+
+    [Fact]
+    public void Player1IsCurrentPlayerAfterSetup()
+    {
+        _sut = CreateSut();
+
+        _sut.Setup();
+
+        Assert.Equal(_sut.PlayerId1, _sut.CurrentPlayerId.Value);
     }
 
     [Fact]
@@ -83,5 +93,31 @@ public class GameTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(YouAreNotInThisGameError, result.Error);
+    }
+
+    [Fact]
+    public void PlayMovesToPlayer2AfterPlayer1Moves()
+    {
+        _sut = CreateSut();
+        _sut.Setup();
+        var plays = _sut.GetPlays(_sut.PlayerId1);
+
+        var result = _sut.MakePlay(_sut.PlayerId1, plays.Value.First());
+
+        Assert.Equal(_sut.PlayerId2, result.Value);
+    }
+
+    [Fact]
+    public void PlayMovesToPlayer1AfterPlayer2Moves()
+    {
+        _sut = CreateSut();
+        _sut.Setup();
+        var plays = _sut.GetPlays(_sut.PlayerId1);
+        _ = _sut.MakePlay(_sut.PlayerId1, plays.Value.First());
+        plays = _sut.GetPlays(_sut.PlayerId2);
+
+        var result = _sut.MakePlay(_sut.PlayerId2, plays.Value.First());
+
+        Assert.Equal(_sut.PlayerId1, result.Value);
     }
 }

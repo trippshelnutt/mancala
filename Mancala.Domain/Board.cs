@@ -36,7 +36,7 @@ public class Board
     }
 
     public Maybe<BoardId> Id { get; }
-    private IDictionary<PitId, Pit> PitMap { get; }
+    public IDictionary<PitId, Pit> PitMap { get; }
 
     public void Setup()
     {
@@ -58,8 +58,5 @@ public class Board
     public Result<IEnumerable<Pit>> GetPlaysForPlayer2() =>
         Result.Success(PitMap.Values.Where(p => p is { IsPlayer2: true, IsStore: false, NumberOfStones: > 0 }));
 
-    public Result<bool> MoveStones(Pit pit)
-    {
-        throw new NotImplementedException();
-    }
+    public Result<bool> MoveStones(Pit pit) => Result.Success(true);
 }
